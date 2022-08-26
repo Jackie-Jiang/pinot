@@ -225,7 +225,7 @@ public class NullHandlingTransformFunctionTest {
       Assert.assertEquals(longValues[i], expectedValues[i]);
       Assert.assertEquals(floatValues[i], (float) expectedValues[i]);
       Assert.assertEquals(doubleValues[i], (double) expectedValues[i]);
-      Assert.assertEquals(stringValues[i], Integer.toString(expectedValues[i]));
+      Assert.assertEquals(stringValues[i], Boolean.toString(expectedValues[i] == 1));
     }
   }
 
