@@ -48,6 +48,11 @@ public interface ValueReader extends Closeable {
   /**
    * NOTE: The passed in reusable buffer should have capacity of at least {@code numBytesPerValue}.
    */
+  byte[] getUnpaddedBytes(int index, int numBytesPerValue, byte paddingByte, byte[] buffer);
+
+  /**
+   * NOTE: The passed in reusable buffer should have capacity of at least {@code numBytesPerValue}.
+   */
   String getPaddedString(int index, int numBytesPerValue, byte[] buffer);
 
   /**

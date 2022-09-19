@@ -42,8 +42,8 @@ import org.apache.pinot.spi.utils.JsonUtils;
 public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
 
   // This ObjectMapper requires special configurations, hence we can't use pinot JsonUtils here.
-  private static final ObjectMapper OBJECT_MAPPER_WITH_BIG_DECIMAL = new ObjectMapper()
-      .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+  private static final ObjectMapper OBJECT_MAPPER_WITH_BIG_DECIMAL =
+      new ObjectMapper().configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
   private static final ParseContext JSON_PARSER_CONTEXT = JsonPath.using(
       new Configuration.ConfigurationBuilder().jsonProvider(new JacksonJsonProvider())
@@ -75,6 +75,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     _defaultValue = defaultValue;
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, int[] valueBuffer) {
     int defaultValue = (_defaultValue instanceof Number) ? ((Number) _defaultValue).intValue() : 0;
@@ -107,6 +108,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, long[] valueBuffer) {
     long defaultValue = (_defaultValue instanceof Number) ? ((Number) _defaultValue).longValue() : 0L;
@@ -139,6 +141,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, float[] valueBuffer) {
     float defaultValue = (_defaultValue instanceof Number) ? ((Number) _defaultValue).floatValue() : 0F;
@@ -171,6 +174,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, double[] valueBuffer) {
     double defaultValue = (_defaultValue instanceof Number) ? ((Number) _defaultValue).doubleValue() : 0D;
@@ -203,6 +207,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, BigDecimal[] valueBuffer) {
     BigDecimal defaultValue = (_defaultValue instanceof BigDecimal) ? ((BigDecimal) _defaultValue) : BigDecimal.ZERO;
@@ -237,6 +242,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, String[] valueBuffer) {
     if (reader.isDictionaryEncoded()) {
@@ -268,6 +274,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, int[][] valueBuffer) {
     if (reader.isDictionaryEncoded()) {
@@ -299,6 +306,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, long[][] valueBuffer) {
     if (reader.isDictionaryEncoded()) {
@@ -330,6 +338,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, float[][] valueBuffer) {
     if (reader.isDictionaryEncoded()) {
@@ -361,6 +370,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, double[][] valueBuffer) {
     if (reader.isDictionaryEncoded()) {
@@ -392,6 +402,7 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
     }
   }
 
+  @Override
   public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, String[][] valueBuffer) {
     if (reader.isDictionaryEncoded()) {
@@ -421,6 +432,12 @@ public final class DefaultJsonPathEvaluator implements JsonPathEvaluator {
           throw new IllegalStateException();
       }
     }
+  }
+
+  @Override
+  public <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
+      ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, byte[][][] valueBuffer) {
+    throw new UnsupportedOperationException();
   }
 
   private <T> T extractFromBytes(Dictionary dictionary, int dictId) {

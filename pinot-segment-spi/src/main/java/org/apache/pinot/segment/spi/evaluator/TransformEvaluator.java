@@ -165,4 +165,17 @@ public interface TransformEvaluator {
    */
   <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
       ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, String[][] valueBuffer);
+
+  /**
+   * Evaluate the JSON path and fill the value buffer
+   * @param docIds the doc ids to evaluate the JSON path for
+   * @param length the number of doc ids to evaluate for
+   * @param reader the ForwardIndexReader
+   * @param context the reader context
+   * @param dictIdsBuffer a buffer for dictionary ids if required
+   * @param valueBuffer the values to fill
+   * @param <T> type of the reader context
+   */
+  <T extends ForwardIndexReaderContext> void evaluateBlock(int[] docIds, int length,
+      ForwardIndexReader<T> reader, T context, Dictionary dictionary, int[] dictIdsBuffer, byte[][][] valueBuffer);
 }

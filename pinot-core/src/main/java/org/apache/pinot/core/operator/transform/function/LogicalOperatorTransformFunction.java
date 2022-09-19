@@ -18,13 +18,11 @@
  */
 package org.apache.pinot.core.operator.transform.function;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.pinot.core.operator.blocks.ProjectionBlock;
 import org.apache.pinot.core.operator.transform.TransformResultMetadata;
 import org.apache.pinot.segment.spi.datasource.DataSource;
-import org.apache.pinot.spi.utils.ArrayCopyUtils;
 
 
 /**
@@ -40,8 +38,8 @@ public abstract class LogicalOperatorTransformFunction extends BaseTransformFunc
     _arguments = arguments;
     int numArguments = arguments.size();
     if (numArguments <= 1) {
-      throw new IllegalArgumentException("Expect more than 1 argument for logical operator [" + getName() + "], args ["
-          + Arrays.toString(arguments.toArray()) + "].");
+      throw new IllegalArgumentException(
+          "Expect more than 1 argument for logical operator [" + getName() + "], args [" + arguments + "].");
     }
     for (int i = 0; i < numArguments; i++) {
       TransformResultMetadata argumentMetadata = arguments.get(i).getResultMetadata();
@@ -64,7 +62,8 @@ public abstract class LogicalOperatorTransformFunction extends BaseTransformFunc
     if (_results == null || _results.length < numDocs) {
       _results = new int[numDocs];
     }
-    ArrayCopyUtils.copy(_arguments.get(0).transformToIntValuesSV(projectionBlock), _results, numDocs);
+
+    System.arraycopy(_arguments.get(0).transformToIntValuesSV(projectionBlock), 0, _results, 0, numDocs);
     int numArguments = _arguments.size();
     for (int i = 1; i < numArguments; i++) {
       TransformFunction transformFunction = _arguments.get(i);

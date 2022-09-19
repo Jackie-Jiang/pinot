@@ -175,7 +175,7 @@ public class StringOffHeapMutableDictionary extends BaseOffHeapMutableDictionary
 
   @Override
   public byte[] getBytesValue(int dictId) {
-    return BytesUtils.toBytes(getStringValue(dictId));
+    return _byteStore.get(dictId);
   }
 
   @Override

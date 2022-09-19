@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.pinot.segment.spi.evaluator.TransformEvaluator;
-import org.apache.pinot.spi.data.FieldSpec;
+import org.apache.pinot.spi.data.FieldSpec.DataType;
 
 
 /**
@@ -39,12 +39,12 @@ public class DataBlockCache {
 
   // Mark whether data have been fetched, need to be cleared in initNewBlock()
   private final Set<String> _columnDictIdLoaded = new HashSet<>();
-  private final Map<FieldSpec.DataType, Set<String>> _columnValueLoaded = new EnumMap<>(FieldSpec.DataType.class);
+  private final Map<DataType, Set<String>> _columnValueLoaded = new EnumMap<>(DataType.class);
   private final Set<String> _columnNumValuesLoaded = new HashSet<>();
 
   // Buffer for data
   private final Map<String, Object> _dictIdsMap = new HashMap<>();
-  private final Map<FieldSpec.DataType, Map<String, Object>> _valuesMap = new HashMap<>();
+  private final Map<DataType, Map<String, Object>> _valuesMap = new HashMap<>();
   private final Map<String, int[]> _numValuesMap = new HashMap<>();
 
   private int[] _docIds;
@@ -123,11 +123,11 @@ public class DataBlockCache {
    * @return Array of int values
    */
   public int[] getIntValuesForSVColumn(String column) {
-    int[] intValues = getValues(FieldSpec.DataType.INT, column);
-    if (markLoaded(FieldSpec.DataType.INT, column)) {
+    int[] intValues = getValues(DataType.INT, column);
+    if (markLoaded(DataType.INT, column)) {
       if (intValues == null) {
         intValues = new int[_length];
-        putValues(FieldSpec.DataType.INT, column, intValues);
+        putValues(DataType.INT, column, intValues);
       }
       _dataFetcher.fetchIntValues(column, _docIds, _length, intValues);
     }
@@ -152,11 +152,11 @@ public class DataBlockCache {
    * @return Array of long values
    */
   public long[] getLongValuesForSVColumn(String column) {
-    long[] longValues = getValues(FieldSpec.DataType.LONG, column);
-    if (markLoaded(FieldSpec.DataType.LONG, column)) {
+    long[] longValues = getValues(DataType.LONG, column);
+    if (markLoaded(DataType.LONG, column)) {
       if (longValues == null) {
         longValues = new long[_length];
-        putValues(FieldSpec.DataType.LONG, column, longValues);
+        putValues(DataType.LONG, column, longValues);
       }
       _dataFetcher.fetchLongValues(column, _docIds, _length, longValues);
     }
@@ -181,11 +181,11 @@ public class DataBlockCache {
    * @return Array of float values
    */
   public float[] getFloatValuesForSVColumn(String column) {
-    float[] floatValues = getValues(FieldSpec.DataType.FLOAT, column);
-    if (markLoaded(FieldSpec.DataType.FLOAT, column)) {
+    float[] floatValues = getValues(DataType.FLOAT, column);
+    if (markLoaded(DataType.FLOAT, column)) {
       if (floatValues == null) {
         floatValues = new float[_length];
-        putValues(FieldSpec.DataType.FLOAT, column, floatValues);
+        putValues(DataType.FLOAT, column, floatValues);
       }
       _dataFetcher.fetchFloatValues(column, _docIds, _length, floatValues);
     }
@@ -210,11 +210,11 @@ public class DataBlockCache {
    * @return Array of double values
    */
   public double[] getDoubleValuesForSVColumn(String column) {
-    double[] doubleValues = getValues(FieldSpec.DataType.DOUBLE, column);
-    if (markLoaded(FieldSpec.DataType.DOUBLE, column)) {
+    double[] doubleValues = getValues(DataType.DOUBLE, column);
+    if (markLoaded(DataType.DOUBLE, column)) {
       if (doubleValues == null) {
         doubleValues = new double[_length];
-        putValues(FieldSpec.DataType.DOUBLE, column, doubleValues);
+        putValues(DataType.DOUBLE, column, doubleValues);
       }
       _dataFetcher.fetchDoubleValues(column, _docIds, _length, doubleValues);
     }
@@ -239,11 +239,11 @@ public class DataBlockCache {
    * @return Array of BigDecimal values
    */
   public BigDecimal[] getBigDecimalValuesForSVColumn(String column) {
-    BigDecimal[] bigDecimalValues = getValues(FieldSpec.DataType.BIG_DECIMAL, column);
-    if (markLoaded(FieldSpec.DataType.BIG_DECIMAL, column)) {
+    BigDecimal[] bigDecimalValues = getValues(DataType.BIG_DECIMAL, column);
+    if (markLoaded(DataType.BIG_DECIMAL, column)) {
       if (bigDecimalValues == null) {
         bigDecimalValues = new BigDecimal[_length];
-        putValues(FieldSpec.DataType.BIG_DECIMAL, column, bigDecimalValues);
+        putValues(DataType.BIG_DECIMAL, column, bigDecimalValues);
       }
       _dataFetcher.fetchBigDecimalValues(column, _docIds, _length, bigDecimalValues);
     }
@@ -268,11 +268,11 @@ public class DataBlockCache {
    * @return Array of string values
    */
   public String[] getStringValuesForSVColumn(String column) {
-    String[] stringValues = getValues(FieldSpec.DataType.STRING, column);
-    if (markLoaded(FieldSpec.DataType.STRING, column)) {
+    String[] stringValues = getValues(DataType.STRING, column);
+    if (markLoaded(DataType.STRING, column)) {
       if (stringValues == null) {
         stringValues = new String[_length];
-        putValues(FieldSpec.DataType.STRING, column, stringValues);
+        putValues(DataType.STRING, column, stringValues);
       }
       _dataFetcher.fetchStringValues(column, _docIds, _length, stringValues);
     }
@@ -297,11 +297,11 @@ public class DataBlockCache {
    * @return byte[] for the column
    */
   public byte[][] getBytesValuesForSVColumn(String column) {
-    byte[][] bytesValues = getValues(FieldSpec.DataType.BYTES, column);
-    if (markLoaded(FieldSpec.DataType.BYTES, column)) {
+    byte[][] bytesValues = getValues(DataType.BYTES, column);
+    if (markLoaded(DataType.BYTES, column)) {
       if (bytesValues == null) {
         bytesValues = new byte[_length][];
-        putValues(FieldSpec.DataType.BYTES, column, bytesValues);
+        putValues(DataType.BYTES, column, bytesValues);
       }
       _dataFetcher.fetchBytesValues(column, _docIds, _length, bytesValues);
     }
@@ -337,11 +337,11 @@ public class DataBlockCache {
    * @return Array of int values
    */
   public int[][] getIntValuesForMVColumn(String column) {
-    int[][] intValues = getValues(FieldSpec.DataType.INT, column);
-    if (markLoaded(FieldSpec.DataType.INT, column)) {
+    int[][] intValues = getValues(DataType.INT, column);
+    if (markLoaded(DataType.INT, column)) {
       if (intValues == null) {
         intValues = new int[_length][];
-        putValues(FieldSpec.DataType.INT, column, intValues);
+        putValues(DataType.INT, column, intValues);
       }
       _dataFetcher.fetchIntValues(column, _docIds, _length, intValues);
     }
@@ -366,11 +366,11 @@ public class DataBlockCache {
    * @return Array of long values
    */
   public long[][] getLongValuesForMVColumn(String column) {
-    long[][] longValues = getValues(FieldSpec.DataType.LONG, column);
-    if (markLoaded(FieldSpec.DataType.LONG, column)) {
+    long[][] longValues = getValues(DataType.LONG, column);
+    if (markLoaded(DataType.LONG, column)) {
       if (longValues == null) {
         longValues = new long[_length][];
-        putValues(FieldSpec.DataType.LONG, column, longValues);
+        putValues(DataType.LONG, column, longValues);
       }
       _dataFetcher.fetchLongValues(column, _docIds, _length, longValues);
     }
@@ -395,11 +395,11 @@ public class DataBlockCache {
    * @return Array of float values
    */
   public float[][] getFloatValuesForMVColumn(String column) {
-    float[][] floatValues = getValues(FieldSpec.DataType.FLOAT, column);
-    if (markLoaded(FieldSpec.DataType.FLOAT, column)) {
+    float[][] floatValues = getValues(DataType.FLOAT, column);
+    if (markLoaded(DataType.FLOAT, column)) {
       if (floatValues == null) {
         floatValues = new float[_length][];
-        putValues(FieldSpec.DataType.FLOAT, column, floatValues);
+        putValues(DataType.FLOAT, column, floatValues);
       }
       _dataFetcher.fetchFloatValues(column, _docIds, _length, floatValues);
     }
@@ -424,11 +424,11 @@ public class DataBlockCache {
    * @return Array of double values
    */
   public double[][] getDoubleValuesForMVColumn(String column) {
-    double[][] doubleValues = getValues(FieldSpec.DataType.DOUBLE, column);
-    if (markLoaded(FieldSpec.DataType.DOUBLE, column)) {
+    double[][] doubleValues = getValues(DataType.DOUBLE, column);
+    if (markLoaded(DataType.DOUBLE, column)) {
       if (doubleValues == null) {
         doubleValues = new double[_length][];
-        putValues(FieldSpec.DataType.DOUBLE, column, doubleValues);
+        putValues(DataType.DOUBLE, column, doubleValues);
       }
       _dataFetcher.fetchDoubleValues(column, _docIds, _length, doubleValues);
     }
@@ -453,11 +453,11 @@ public class DataBlockCache {
    * @return Array of string values
    */
   public String[][] getStringValuesForMVColumn(String column) {
-    String[][] stringValues = getValues(FieldSpec.DataType.STRING, column);
-    if (markLoaded(FieldSpec.DataType.STRING, column)) {
+    String[][] stringValues = getValues(DataType.STRING, column);
+    if (markLoaded(DataType.STRING, column)) {
       if (stringValues == null) {
         stringValues = new String[_length][];
-        putValues(FieldSpec.DataType.STRING, column, stringValues);
+        putValues(DataType.STRING, column, stringValues);
       }
       _dataFetcher.fetchStringValues(column, _docIds, _length, stringValues);
     }
@@ -473,6 +473,35 @@ public class DataBlockCache {
    */
   public void fillValues(String column, TransformEvaluator evaluator, String[][] buffer) {
     _dataFetcher.fetchStringValues(column, evaluator, _docIds, _length, buffer);
+  }
+
+  /**
+   * Get the bytes values for a multi-valued column.
+   *
+   * @param column Column name
+   * @return Array of bytes values
+   */
+  public byte[][][] getBytesValuesForMVColumn(String column) {
+    byte[][][] bytesValues = getValues(DataType.BYTES, column);
+    if (markLoaded(DataType.BYTES, column)) {
+      if (bytesValues == null) {
+        bytesValues = new byte[_length][][];
+        putValues(DataType.BYTES, column, bytesValues);
+      }
+      _dataFetcher.fetchBytesValues(column, _docIds, _length, bytesValues);
+    }
+    return bytesValues;
+  }
+
+  /**
+   * Get the byte[][][] values for a column.
+   *
+   * @param column Column name
+   * @param evaluator transform evaluator
+   * @param buffer values to fill
+   */
+  public void fillValues(String column, TransformEvaluator evaluator, byte[][][] buffer) {
+    _dataFetcher.fetchBytesValues(column, evaluator, _docIds, _length, buffer);
   }
 
   /**
@@ -493,16 +522,16 @@ public class DataBlockCache {
     return numValues;
   }
 
-  private boolean markLoaded(FieldSpec.DataType dataType, String column) {
+  private boolean markLoaded(DataType dataType, String column) {
     return _columnValueLoaded.computeIfAbsent(dataType, k -> new HashSet<>()).add(column);
   }
 
   @SuppressWarnings("unchecked")
-  private <T> T getValues(FieldSpec.DataType dataType, String column) {
+  private <T> T getValues(DataType dataType, String column) {
     return (T) _valuesMap.computeIfAbsent(dataType, k -> new HashMap<>()).get(column);
   }
 
-  private void putValues(FieldSpec.DataType dataType, String column, Object values) {
+  private void putValues(DataType dataType, String column, Object values) {
     _valuesMap.get(dataType).put(column, values);
   }
 }

@@ -24,7 +24,8 @@ import java.util.Arrays;
 import org.apache.pinot.segment.spi.index.reader.Dictionary;
 import org.apache.pinot.segment.spi.memory.PinotDataBuffer;
 import org.apache.pinot.spi.data.FieldSpec.DataType;
-import org.apache.pinot.spi.utils.BytesUtils;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 
 /**
@@ -132,6 +133,6 @@ public class OnHeapStringDictionary extends BaseImmutableDictionary {
 
   @Override
   public byte[] getBytesValue(int dictId) {
-    return BytesUtils.toBytes(_unpaddedStrings[dictId]);
+    return _unpaddedStrings[dictId].getBytes(UTF_8);
   }
 }

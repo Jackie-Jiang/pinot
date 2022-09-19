@@ -25,7 +25,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import org.apache.pinot.common.request.context.predicate.RangePredicate;
 import org.apache.pinot.spi.data.FieldSpec.DataType;
-import org.apache.pinot.spi.utils.BytesUtils;
+import org.apache.pinot.spi.utils.BigDecimalUtils;
 
 
 @SuppressWarnings("Duplicates")
@@ -205,7 +205,7 @@ public class BigDecimalOnHeapMutableDictionary extends BaseOnHeapMutableDictiona
 
   @Override
   public byte[] getBytesValue(int dictId) {
-    return BytesUtils.toBytes(getStringValue(dictId));
+    return BigDecimalUtils.serialize(getBigDecimalValue(dictId));
   }
 
   private void updateMinMax(BigDecimal value) {

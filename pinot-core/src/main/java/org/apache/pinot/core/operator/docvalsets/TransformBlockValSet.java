@@ -219,6 +219,11 @@ public class TransformBlockValSet implements BlockValSet {
   }
 
   @Override
+  public byte[][][] getUtf8ValuesMV() {
+    return new byte[0][][];
+  }
+
+  @Override
   public int[] getNumMVEntries() {
     if (_numMVEntries == null) {
       _numMVEntries = new int[DocIdSetPlanNode.MAX_DOC_PER_CALL];

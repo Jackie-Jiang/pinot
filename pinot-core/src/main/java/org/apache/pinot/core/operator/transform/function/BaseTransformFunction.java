@@ -67,6 +67,7 @@ public abstract class BaseTransformFunction implements TransformFunction {
   protected float[][] _floatValuesMV;
   protected double[][] _doubleValuesMV;
   protected String[][] _stringValuesMV;
+  protected byte[][][] _bytesValuesMV;
 
   @Override
   public Dictionary getDictionary() {
@@ -769,5 +770,37 @@ public abstract class BaseTransformFunction implements TransformFunction {
       }
     }
     return _stringValuesMV;
+  }
+
+  @Override
+  public byte[][][] transformToBytesValuesMV(ProjectionBlock projectionBlock) {
+    int length = projectionBlock.getNumDocs();
+
+    if (_bytesValuesMV == null) {
+      _bytesValuesMV = new byte[length][][];
+    }
+
+    Dictionary dictionary = getDictionary();
+    if (dictionary != null) {
+      int[][] dictIdsMV = transformToDictIdsMV(projectionBlock);
+      for (int i = 0; i < length; i++) {
+        int[] dictIds = dictIdsMV[i];
+        int numValues = dictIds.length;
+        byte[][] bytesValues = new byte[numValues][];
+        dictionary.readBytesValues(dictIds, numValues, bytesValues);
+        _bytesValuesMV[i] = bytesValues;
+      }
+    } else {
+      Preconditions.checkState(getResultMetadata().getDataType().getStoredType() == DataType.STRING);
+      String[][] stringValuesMV = transformToStringValuesMV(projectionBlock);
+      for (int i = 0; i < length; i++) {
+        String[] stringValues = stringValuesMV[i];
+        int numValues = stringValues.length;
+        byte[][] bytesValues = new byte[numValues][];
+        ArrayCopyUtils.copy(stringValues, bytesValues, numValues);
+        _bytesValuesMV[i] = bytesValues;
+      }
+    }
+    return _bytesValuesMV;
   }
 }
