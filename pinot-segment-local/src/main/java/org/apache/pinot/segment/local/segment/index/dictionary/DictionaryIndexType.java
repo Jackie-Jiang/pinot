@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +36,6 @@ import javax.annotation.Nullable;
 import org.apache.pinot.segment.local.io.util.PinotDataBitSet;
 import org.apache.pinot.segment.local.realtime.impl.dictionary.MutableDictionaryFactory;
 import org.apache.pinot.segment.local.segment.creator.impl.SegmentDictionaryCreator;
-import org.apache.pinot.segment.local.segment.index.loader.ConfigurableFromIndexLoadingConfig;
-import org.apache.pinot.segment.local.segment.index.loader.IndexLoadingConfig;
 import org.apache.pinot.segment.local.segment.index.readers.BigDecimalDictionary;
 import org.apache.pinot.segment.local.segment.index.readers.BytesDictionary;
 import org.apache.pinot.segment.local.segment.index.readers.DoubleDictionary;
@@ -88,8 +85,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class DictionaryIndexType
-    extends AbstractIndexType<DictionaryIndexConfig, Dictionary, SegmentDictionaryCreator>
-    implements ConfigurableFromIndexLoadingConfig<DictionaryIndexConfig> {
+    extends AbstractIndexType<DictionaryIndexConfig, Dictionary, SegmentDictionaryCreator> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DictionaryIndexType.class);
   private static final List<String> EXTENSIONS = Collections.singletonList(V1Constants.Dict.FILE_EXTENSION);
 
@@ -100,24 +96,6 @@ public class DictionaryIndexType
   @Override
   public Class<DictionaryIndexConfig> getIndexConfigClass() {
     return DictionaryIndexConfig.class;
-  }
-
-  @Override
-  public Map<String, DictionaryIndexConfig> fromIndexLoadingConfig(
-      IndexLoadingConfig indexLoadingConfig) {
-    Map<String, DictionaryIndexConfig> result = new HashMap<>();
-    Set<String> noDictionaryCols = indexLoadingConfig.getNoDictionaryColumns();
-    Set<String> onHeapCols = indexLoadingConfig.getOnHeapDictionaryColumns();
-    Set<String> varLengthCols = indexLoadingConfig.getVarLengthDictionaryColumns();
-    for (String column : indexLoadingConfig.getAllKnownColumns()) {
-      if (noDictionaryCols.contains(column)) {
-        result.put(column, DictionaryIndexConfig.disabled());
-      } else {
-        // Intern configs can only be used if dictionary is enabled through FieldConfigLists.
-        result.put(column, new DictionaryIndexConfig(onHeapCols.contains(column), varLengthCols.contains(column)));
-      }
-    }
-    return result;
   }
 
   @Override

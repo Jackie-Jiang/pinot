@@ -28,8 +28,6 @@ import javax.annotation.Nullable;
 import org.apache.pinot.segment.local.realtime.impl.json.MutableJsonIndexImpl;
 import org.apache.pinot.segment.local.segment.creator.impl.inv.json.OffHeapJsonIndexCreator;
 import org.apache.pinot.segment.local.segment.creator.impl.inv.json.OnHeapJsonIndexCreator;
-import org.apache.pinot.segment.local.segment.index.loader.ConfigurableFromIndexLoadingConfig;
-import org.apache.pinot.segment.local.segment.index.loader.IndexLoadingConfig;
 import org.apache.pinot.segment.local.segment.index.loader.invertedindex.JsonIndexHandler;
 import org.apache.pinot.segment.local.segment.index.readers.json.ImmutableJsonIndexReader;
 import org.apache.pinot.segment.spi.ColumnMetadata;
@@ -56,8 +54,7 @@ import org.apache.pinot.spi.data.FieldSpec;
 import org.apache.pinot.spi.data.Schema;
 
 
-public class JsonIndexType extends AbstractIndexType<JsonIndexConfig, JsonIndexReader, JsonIndexCreator>
-    implements ConfigurableFromIndexLoadingConfig<JsonIndexConfig> {
+public class JsonIndexType extends AbstractIndexType<JsonIndexConfig, JsonIndexReader, JsonIndexCreator> {
   public static final String INDEX_DISPLAY_NAME = "json";
   private static final List<String> EXTENSIONS =
       Collections.singletonList(V1Constants.Indexes.JSON_INDEX_FILE_EXTENSION);
@@ -69,11 +66,6 @@ public class JsonIndexType extends AbstractIndexType<JsonIndexConfig, JsonIndexR
   @Override
   public Class<JsonIndexConfig> getIndexConfigClass() {
     return JsonIndexConfig.class;
-  }
-
-  @Override
-  public Map<String, JsonIndexConfig> fromIndexLoadingConfig(IndexLoadingConfig indexLoadingConfig) {
-    return indexLoadingConfig.getJsonIndexConfigs();
   }
 
   @Override

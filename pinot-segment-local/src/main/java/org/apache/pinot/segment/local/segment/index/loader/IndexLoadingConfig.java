@@ -19,7 +19,6 @@
 package org.apache.pinot.segment.local.segment.index.loader;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,7 +36,6 @@ import org.apache.pinot.segment.spi.creator.SegmentVersion;
 import org.apache.pinot.segment.spi.index.ColumnConfigDeserializer;
 import org.apache.pinot.segment.spi.index.FieldIndexConfigs;
 import org.apache.pinot.segment.spi.index.FieldIndexConfigsUtil;
-import org.apache.pinot.segment.spi.index.IndexConfigDeserializer;
 import org.apache.pinot.segment.spi.index.IndexType;
 import org.apache.pinot.segment.spi.index.RangeIndexConfig;
 import org.apache.pinot.segment.spi.loader.SegmentDirectoryLoaderRegistry;
@@ -57,8 +55,6 @@ import org.apache.pinot.spi.env.PinotConfiguration;
 import org.apache.pinot.spi.utils.CommonConstants;
 import org.apache.pinot.spi.utils.ReadMode;
 import org.apache.pinot.spi.utils.TimestampIndexUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -67,58 +63,63 @@ import org.slf4j.LoggerFactory;
 public class IndexLoadingConfig {
   private static final int DEFAULT_REALTIME_AVG_MULTI_VALUE_COUNT = 2;
   public static final String READ_MODE_KEY = "readMode";
-  private static final Logger LOGGER = LoggerFactory.getLogger(IndexLoadingConfig.class);
 
-  private InstanceDataManagerConfig _instanceDataManagerConfig = null;
+  private final InstanceDataManagerConfig _instanceDataManagerConfig;
+  private final TableConfig _tableConfig;
+  private final Schema _schema;
+
+  // These fields can be modified after initialization
+  // TODO: Revisit them
   private ReadMode _readMode = ReadMode.DEFAULT_MODE;
+  private SegmentVersion _segmentVersion;
+  private String _segmentTier;
+  private Set<String> _knownColumns;
+  private String _tableDataDir;
+  private boolean _errorOnColumnBuildFailure;
+
+  // Initialized by instance data manager config
+  private String _instanceId;
+  private boolean _isRealtimeOffHeapAllocation;
+  private boolean _isDirectRealtimeOffHeapAllocation;
+  private int _realtimeAvgMultiValueCount = DEFAULT_REALTIME_AVG_MULTI_VALUE_COUNT;
+  private String _segmentStoreURI;
+  private String _segmentDirectoryLoader;
+  private Map<String, Map<String, String>> _instanceTierConfigs;
+
+  // Initialized by table config and schema
   private List<String> _sortedColumns = Collections.emptyList();
-  private Set<String> _invertedIndexColumns = new HashSet<>();
-  private Set<String> _rangeIndexColumns = new HashSet<>();
+  private final Set<String> _invertedIndexColumns = new HashSet<>();
+  private final Set<String> _rangeIndexColumns = new HashSet<>();
   private int _rangeIndexVersion = RangeIndexConfig.DEFAULT.getVersion();
-  private Set<String> _textIndexColumns = new HashSet<>();
-  private Set<String> _fstIndexColumns = new HashSet<>();
+  private final Set<String> _textIndexColumns = new HashSet<>();
+  private final Set<String> _fstIndexColumns = new HashSet<>();
   private FSTType _fstIndexType = FSTType.LUCENE;
   private Map<String, JsonIndexConfig> _jsonIndexConfigs = new HashMap<>();
   private final Set<String> _noDictionaryColumns = new HashSet<>(); // TODO: replace this by _noDictionaryConfig.
   private final Map<String, String> _noDictionaryConfig = new HashMap<>();
   private final Set<String> _varLengthDictionaryColumns = new HashSet<>();
-  private Set<String> _onHeapDictionaryColumns = new HashSet<>();
-  private Map<String, BloomFilterConfig> _bloomFilterConfigs = new HashMap<>();
+  private final Set<String> _onHeapDictionaryColumns = new HashSet<>();
+  private final Map<String, BloomFilterConfig> _bloomFilterConfigs = new HashMap<>();
+  private ColumnMinMaxValueGeneratorMode _columnMinMaxValueGeneratorMode = ColumnMinMaxValueGeneratorMode.DEFAULT_MODE;
   private boolean _enableDynamicStarTreeCreation;
   private List<StarTreeIndexConfig> _starTreeIndexConfigs;
   private boolean _enableDefaultStarTree;
+  private final Map<String, Map<String, String>> _columnProperties = new HashMap<>();
   private Map<String, FieldIndexConfigs> _indexConfigsByColName = new HashMap<>();
 
-  private SegmentVersion _segmentVersion;
-  private ColumnMinMaxValueGeneratorMode _columnMinMaxValueGeneratorMode = ColumnMinMaxValueGeneratorMode.DEFAULT_MODE;
-  private int _realtimeAvgMultiValueCount = DEFAULT_REALTIME_AVG_MULTI_VALUE_COUNT;
-  private boolean _isRealtimeOffHeapAllocation;
-  private boolean _isDirectRealtimeOffHeapAllocation;
-  private String _segmentStoreURI;
-  private boolean _errorOnColumnBuildFailure;
-
-  // constructed from FieldConfig
-  private Map<String, Map<String, String>> _columnProperties = new HashMap<>();
-
-  @Nullable
-  private TableConfig _tableConfig;
-  private Schema _schema;
-  private String _tableDataDir;
-  private String _segmentDirectoryLoader;
-  private String _segmentTier;
-
-  private String _instanceId;
-  private Map<String, Map<String, String>> _instanceTierConfigs;
   private boolean _dirty = true;
-  private Set<String> _knownColumns = null;
 
   /**
    * NOTE: This step might modify the passed in table config and schema.
+   *
+   * TODO: Revisit the init handling. Currently it doesn't apply tiered config override
    */
-  public IndexLoadingConfig(InstanceDataManagerConfig instanceDataManagerConfig, TableConfig tableConfig,
-      @Nullable Schema schema) {
-    extractFromInstanceConfig(instanceDataManagerConfig);
-    extractFromTableConfigAndSchema(tableConfig, schema);
+  public IndexLoadingConfig(@Nullable InstanceDataManagerConfig instanceDataManagerConfig,
+      @Nullable TableConfig tableConfig, @Nullable Schema schema) {
+    _instanceDataManagerConfig = instanceDataManagerConfig;
+    _tableConfig = tableConfig;
+    _schema = schema;
+    init();
   }
 
   @VisibleForTesting
@@ -128,25 +129,72 @@ public class IndexLoadingConfig {
 
   @VisibleForTesting
   public IndexLoadingConfig(TableConfig tableConfig, @Nullable Schema schema) {
-    extractFromTableConfigAndSchema(tableConfig, schema);
+    this(null, tableConfig, schema);
   }
 
   /**
    * NOTE: Can be used in production code when we want to load a segment as is without any modifications.
    */
   public IndexLoadingConfig() {
+    this(null, null, null);
   }
 
+  @Nullable
   public InstanceDataManagerConfig getInstanceDataManagerConfig() {
     return _instanceDataManagerConfig;
+  }
+
+  @Nullable
+  public TableConfig getTableConfig() {
+    return _tableConfig;
+  }
+
+  @Nullable
+  public Schema getSchema() {
+    return _schema;
+  }
+
+  private void init() {
+    if (_instanceDataManagerConfig != null) {
+      extractFromInstanceConfig(_instanceDataManagerConfig);
+    }
+    if (_tableConfig != null) {
+      extractFromTableConfigAndSchema(_tableConfig, _schema);
+    }
+  }
+
+  private void extractFromInstanceConfig(InstanceDataManagerConfig instanceDataManagerConfig) {
+    _instanceId = instanceDataManagerConfig.getInstanceId();
+
+    ReadMode instanceReadMode = instanceDataManagerConfig.getReadMode();
+    if (instanceReadMode != null) {
+      _readMode = instanceReadMode;
+    }
+
+    String instanceSegmentVersion = instanceDataManagerConfig.getSegmentFormatVersion();
+    if (instanceSegmentVersion != null) {
+      _segmentVersion = SegmentVersion.valueOf(instanceSegmentVersion.toLowerCase());
+    }
+
+    _isRealtimeOffHeapAllocation = instanceDataManagerConfig.isRealtimeOffHeapAllocation();
+    _isDirectRealtimeOffHeapAllocation = instanceDataManagerConfig.isDirectRealtimeOffHeapAllocation();
+
+    String avgMultiValueCount = instanceDataManagerConfig.getAvgMultiValueCount();
+    if (avgMultiValueCount != null) {
+      _realtimeAvgMultiValueCount = Integer.parseInt(avgMultiValueCount);
+    }
+    _segmentStoreURI =
+        instanceDataManagerConfig.getConfig().getProperty(CommonConstants.Server.CONFIG_OF_SEGMENT_STORE_URI);
+    _segmentDirectoryLoader = instanceDataManagerConfig.getSegmentDirectoryLoader();
+
+    Map<String, Map<String, String>> tierConfigs = instanceDataManagerConfig.getTierConfigs();
+    _instanceTierConfigs = tierConfigs != null ? tierConfigs : Map.of();
   }
 
   private void extractFromTableConfigAndSchema(TableConfig tableConfig, @Nullable Schema schema) {
     if (schema != null) {
       TimestampIndexUtils.applyTimestampIndex(tableConfig, schema);
     }
-    _tableConfig = tableConfig;
-    _schema = schema;
 
     IndexingConfig indexingConfig = tableConfig.getIndexingConfig();
     String tableReadMode = indexingConfig.getLoadMode();
@@ -280,38 +328,12 @@ public class IndexLoadingConfig {
   }
 
   private <C extends IndexConfig> ColumnConfigDeserializer<C> getDeserializer(IndexType<C, ?, ?> indexType) {
-    ColumnConfigDeserializer<C> deserializer;
-
-    ColumnConfigDeserializer<C> stdDeserializer = indexType::getConfig;
-    if (indexType instanceof ConfigurableFromIndexLoadingConfig) {
-      @SuppressWarnings("unchecked")
-      Map<String, C> fromIndexLoadingConfig =
-          ((ConfigurableFromIndexLoadingConfig<C>) indexType).fromIndexLoadingConfig(this);
-
-      if (_schema == null || _tableConfig == null) {
-        LOGGER.debug("Ignoring default deserializers given that there is no schema [{}] or table config [{}]. Using "
-            + "indexLoadingConfig for indexType: {}", _schema == null, _tableConfig == null, indexType);
-        deserializer = IndexConfigDeserializer.fromMap(table -> fromIndexLoadingConfig);
-      } else if (_segmentTier == null) {
-        deserializer =
-            IndexConfigDeserializer.fromMap(table -> fromIndexLoadingConfig).withFallbackAlternative(stdDeserializer);
-      } else {
-        // No need to fall back to fromIndexLoadingConfig which contains index configs for default tier, when looking
-        // for tier specific index configs.
-        deserializer = stdDeserializer;
-      }
+    if (_tableConfig != null && _schema != null) {
+      return indexType::getConfig;
     } else {
-      if (_schema == null || _tableConfig == null) {
-        LOGGER.debug(
-            "Ignoring default deserializers given that there is no schema [{}] or table config [{}]. Using default "
-                + "configs for indexType: {}", _schema == null, _tableConfig == null, indexType);
-        deserializer = (tableConfig, schema) -> getAllKnownColumns().stream()
-            .collect(Collectors.toMap(Function.identity(), col -> indexType.getDefaultConfig()));
-      } else {
-        deserializer = stdDeserializer;
-      }
+      return (tableConfig, schema) -> getAllKnownColumns().stream()
+          .collect(Collectors.toMap(Function.identity(), col -> indexType.getDefaultConfig()));
     }
-    return deserializer;
   }
 
   private TableConfig getTableConfigWithTierOverwrites() {
@@ -360,43 +382,10 @@ public class IndexLoadingConfig {
     }
   }
 
-  private void extractFromInstanceConfig(InstanceDataManagerConfig instanceDataManagerConfig) {
-    if (instanceDataManagerConfig == null) {
-      return;
-    }
-
-    _instanceDataManagerConfig = instanceDataManagerConfig;
-    _instanceId = instanceDataManagerConfig.getInstanceId();
-
-    ReadMode instanceReadMode = instanceDataManagerConfig.getReadMode();
-    if (instanceReadMode != null) {
-      _readMode = instanceReadMode;
-    }
-
-    String instanceSegmentVersion = instanceDataManagerConfig.getSegmentFormatVersion();
-    if (instanceSegmentVersion != null) {
-      _segmentVersion = SegmentVersion.valueOf(instanceSegmentVersion.toLowerCase());
-    }
-
-    _isRealtimeOffHeapAllocation = instanceDataManagerConfig.isRealtimeOffHeapAllocation();
-    _isDirectRealtimeOffHeapAllocation = instanceDataManagerConfig.isDirectRealtimeOffHeapAllocation();
-
-    String avgMultiValueCount = instanceDataManagerConfig.getAvgMultiValueCount();
-    if (avgMultiValueCount != null) {
-      _realtimeAvgMultiValueCount = Integer.parseInt(avgMultiValueCount);
-    }
-    _segmentStoreURI =
-        instanceDataManagerConfig.getConfig().getProperty(CommonConstants.Server.CONFIG_OF_SEGMENT_STORE_URI);
-    _segmentDirectoryLoader = instanceDataManagerConfig.getSegmentDirectoryLoader();
-  }
-
   public ReadMode getReadMode() {
     return _readMode;
   }
 
-  /**
-   * For tests only.
-   */
   public void setReadMode(ReadMode readMode) {
     _readMode = readMode;
     _dirty = true;
@@ -444,83 +433,6 @@ public class IndexLoadingConfig {
 
   public Map<String, Map<String, String>> getColumnProperties() {
     return unmodifiable(_columnProperties);
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setColumnProperties(Map<String, Map<String, String>> columnProperties) {
-    _columnProperties = new HashMap<>(columnProperties);
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setInvertedIndexColumns(Set<String> invertedIndexColumns) {
-    _invertedIndexColumns = new HashSet<>(invertedIndexColumns);
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void addNoDictionaryColumns(Collection<String> noDictionaryColumns) {
-    _noDictionaryColumns.addAll(noDictionaryColumns);
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setRangeIndexColumns(Set<String> rangeIndexColumns) {
-    _rangeIndexColumns = new HashSet<>(rangeIndexColumns);
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setTextIndexColumns(Set<String> textIndexColumns) {
-    _textIndexColumns = new HashSet<>(textIndexColumns);
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setFSTIndexColumns(Set<String> fstIndexColumns) {
-    _fstIndexColumns = new HashSet<>(fstIndexColumns);
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setFSTIndexType(FSTType fstType) {
-    _fstIndexType = fstType;
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setJsonIndexColumns(Set<String> jsonIndexColumns) {
-    if (jsonIndexColumns != null) {
-      _jsonIndexConfigs = new HashMap<>();
-      for (String jsonIndexColumn : jsonIndexColumns) {
-        _jsonIndexConfigs.put(jsonIndexColumn, new JsonIndexConfig());
-      }
-    } else {
-      _jsonIndexConfigs = null;
-    }
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setBloomFilterConfigs(Map<String, BloomFilterConfig> bloomFilterConfigs) {
-    _bloomFilterConfigs = new HashMap<>(bloomFilterConfigs);
-    _dirty = true;
-  }
-
-  @Deprecated
-  @VisibleForTesting
-  public void setOnHeapDictionaryColumns(Set<String> onHeapDictionaryColumns) {
-    _onHeapDictionaryColumns = new HashSet<>(onHeapDictionaryColumns);
-    _dirty = true;
   }
 
   public Set<String> getNoDictionaryColumns() {
@@ -598,16 +510,6 @@ public class IndexLoadingConfig {
     return _realtimeAvgMultiValueCount;
   }
 
-  @Nullable
-  public TableConfig getTableConfig() {
-    return _tableConfig;
-  }
-
-  @Nullable
-  public Schema getSchema() {
-    return _schema;
-  }
-
   public String getSegmentDirectoryLoader() {
     return StringUtils.isNotBlank(_segmentDirectoryLoader) ? _segmentDirectoryLoader
         : SegmentDirectoryLoaderRegistry.DEFAULT_SEGMENT_DIRECTORY_LOADER_NAME;
@@ -623,9 +525,21 @@ public class IndexLoadingConfig {
     return _instanceId;
   }
 
+  public String getSegmentTier() {
+    return _segmentTier;
+  }
+
+  public void setSegmentTier(String segmentTier) {
+    _segmentTier = segmentTier;
+    _dirty = true;
+  }
+
+  public String getTableDataDir() {
+    return _tableDataDir;
+  }
+
   public void setTableDataDir(String tableDataDir) {
     _tableDataDir = tableDataDir;
-    _dirty = true;
   }
 
   public boolean isErrorOnColumnBuildFailure() {
@@ -634,19 +548,6 @@ public class IndexLoadingConfig {
 
   public void setErrorOnColumnBuildFailure(boolean errorOnColumnBuildFailure) {
     _errorOnColumnBuildFailure = errorOnColumnBuildFailure;
-  }
-
-  public String getTableDataDir() {
-    return _tableDataDir;
-  }
-
-  public void setSegmentTier(String segmentTier) {
-    _segmentTier = segmentTier;
-    _dirty = true;
-  }
-
-  public String getSegmentTier() {
-    return _segmentTier;
   }
 
   @Nullable

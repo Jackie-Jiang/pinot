@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.pinot.segment.local.segment.creator.impl.bloom.OnHeapGuavaBloomFilterCreator;
-import org.apache.pinot.segment.local.segment.index.loader.ConfigurableFromIndexLoadingConfig;
-import org.apache.pinot.segment.local.segment.index.loader.IndexLoadingConfig;
 import org.apache.pinot.segment.local.segment.index.loader.bloomfilter.BloomFilterHandler;
 import org.apache.pinot.segment.local.segment.index.readers.bloom.BloomFilterReaderFactory;
 import org.apache.pinot.segment.spi.ColumnMetadata;
@@ -49,9 +47,7 @@ import org.apache.pinot.spi.config.table.TableConfig;
 import org.apache.pinot.spi.data.Schema;
 
 
-public class BloomIndexType
-    extends AbstractIndexType<BloomFilterConfig, BloomFilterReader, BloomFilterCreator>
-    implements ConfigurableFromIndexLoadingConfig<BloomFilterConfig> {
+public class BloomIndexType extends AbstractIndexType<BloomFilterConfig, BloomFilterReader, BloomFilterCreator> {
   public static final String INDEX_DISPLAY_NAME = "bloom";
   private static final List<String> EXTENSIONS =
       Collections.singletonList(V1Constants.Indexes.BLOOM_FILTER_FILE_EXTENSION);
@@ -63,11 +59,6 @@ public class BloomIndexType
   @Override
   public Class<BloomFilterConfig> getIndexConfigClass() {
     return BloomFilterConfig.class;
-  }
-
-  @Override
-  public Map<String, BloomFilterConfig> fromIndexLoadingConfig(IndexLoadingConfig indexLoadingConfig) {
-    return indexLoadingConfig.getBloomFilterConfigs();
   }
 
   @Override

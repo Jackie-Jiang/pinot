@@ -24,14 +24,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.pinot.segment.local.realtime.impl.invertedindex.RealtimeInvertedIndex;
 import org.apache.pinot.segment.local.segment.creator.impl.inv.OffHeapBitmapInvertedIndexCreator;
 import org.apache.pinot.segment.local.segment.creator.impl.inv.OnHeapBitmapInvertedIndexCreator;
-import org.apache.pinot.segment.local.segment.index.loader.ConfigurableFromIndexLoadingConfig;
-import org.apache.pinot.segment.local.segment.index.loader.IndexLoadingConfig;
 import org.apache.pinot.segment.local.segment.index.loader.invertedindex.InvertedIndexHandler;
 import org.apache.pinot.segment.local.segment.index.readers.BitmapInvertedIndexReader;
 import org.apache.pinot.segment.spi.ColumnMetadata;
@@ -60,8 +56,7 @@ import org.apache.pinot.spi.data.Schema;
 
 
 public class InvertedIndexType
-    extends AbstractIndexType<IndexConfig, InvertedIndexReader, DictionaryBasedInvertedIndexCreator>
-    implements ConfigurableFromIndexLoadingConfig<IndexConfig> {
+    extends AbstractIndexType<IndexConfig, InvertedIndexReader, DictionaryBasedInvertedIndexCreator> {
   public static final String INDEX_DISPLAY_NAME = "inverted";
   private static final List<String> EXTENSIONS =
       Collections.singletonList(V1Constants.Indexes.BITMAP_INVERTED_INDEX_FILE_EXTENSION);
@@ -73,12 +68,6 @@ public class InvertedIndexType
   @Override
   public Class<IndexConfig> getIndexConfigClass() {
     return IndexConfig.class;
-  }
-
-  @Override
-  public Map<String, IndexConfig> fromIndexLoadingConfig(IndexLoadingConfig indexLoadingConfig) {
-    return indexLoadingConfig.getInvertedIndexColumns().stream()
-        .collect(Collectors.toMap(Function.identity(), v -> IndexConfig.ENABLED));
   }
 
   @Override
